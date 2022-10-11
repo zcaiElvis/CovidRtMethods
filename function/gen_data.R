@@ -1,4 +1,5 @@
 source("function/disc_gamma.R")
+source("constant/constant.R")
 
 
 ### Function: Generating Incidence given Rt.
@@ -23,8 +24,18 @@ gamma_reparam <- function(g_mean, g_sd){
 }
 
 
-
-shape_scale <- gamma_reparam(15.3, 9.3)
+### Corresponds to simulation 2A in Epifilter
+shape_scale <- gamma_reparam(sid_ebola_mean, sid_ebola_sd)
 r1 <- c(rep(2, 100), rep(0.5, 200))
+y1 <- gen_with_rt(r1, shape_scale[1], shape_scale[2])
+write.csv(data.frame(r=r1, y=y1, idx=length(y1)), row.names = FALSE, file = "data/processed/a.csv")
+plot(y1)
 
-plot(gen_with_rt(r1, shape_scale[1], shape_scale[2]))
+
+### Corresponds to simulation 2B in Epifilter
+r2 <- c(rep(4, 40), rep(0.6, 40), rep(2, 70), rep(0.2, 150))
+y2 <- gen_with_rt(r2, shape_scale[1], shape_scale[2])
+write.csv(data.frame(r=r2, y=y2, idx=length(y2)), row.names = FALSE, file = "data/processed/b.csv")
+plot(y2)
+
+
