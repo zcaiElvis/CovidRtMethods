@@ -1,7 +1,7 @@
 # covid_rt_comparison
 
 Comparison of Rt on synthetic dataset (EpiFilter, synthetic data 2a and 2b)
-Results in <plot>
+Results in plot
 
 ```bash
 .
