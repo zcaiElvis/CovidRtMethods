@@ -23,5 +23,32 @@ compare_rt <- function(r1, r2){
 }
 
 
+### Function: Plot one-day ahead prediction
 
-dfaom <- compare_rt(1:10, 4:13)
+onedayhead <- function(r, iwt, i){
+  dat_length <- length(r)
+  pred <- r*iwt
+  plot<- ggplot(data.frame(idx=1:dat_length, pred = pred, i = i), aes(x=idx))+
+    geom_line(aes(x=idx, y = i), color = "blue")+
+    geom_line(aes(x=idx, y = pred), color = "red")+
+    theme_bw()+
+    ylab("Case")+
+    xlab("Time")
+  return(plot)
+}
+
+
+
+diag_plots <- function(true_r, pred_r, iwt, i){
+  output = list()
+  compare_r <- compare_rt(true_r, pred_r)
+  oneday_r <- onedayhead(pred_r, iwt, i)
+  
+  output$rt = compare_r
+  output$oneday = oneday_r
+  return(output)
+}
+
+
+# 
+# dfaom <- compare_rt(1:10, 4:13)
