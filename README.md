@@ -3,6 +3,7 @@
 Comparison of Rt on synthetic dataset (EpiFilter, synthetic data 2a and 2b)
 Results in <plot>
 
+```bash
 .
 ├── README.md
 ├── constant
@@ -46,3 +47,6 @@ Results in <plot>
     └── run_Pl_simple.R
 
 14 directories, 26 files
+
+
+```
