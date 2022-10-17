@@ -1,7 +1,6 @@
 # covid_rt_comparison
 
-Comparison of Rt on synthetic dataset (EpiFilter, synthetic data 2a and 2b)
-Results in plot
+Report in report.pdf
 
 ```bash
 .
@@ -12,15 +11,20 @@ Results in plot
 │   ├── processed
 │   │   ├── a.csv
 │   │   ├── b.csv
+│   │   ├── c.csv
+│   │   ├── d.csv
+│   │   ├── e.csv
 │   │   └── rdate.csv
 │   └── raw
 │       └── owid_Sep5.csv
 ├── function
+│   ├── add_cyclic.R
 │   ├── disc_gamma.R
 │   ├── gen_data.R
 │   ├── get_iwt.R
 │   ├── make_plot.R
 │   ├── process_data.R
+│   ├── run_trend_filter.R
 │   └── util.R
 ├── model
 │   ├── pls
@@ -37,16 +41,18 @@ Results in plot
 │   │   └── b.png
 │   └── pls
 │       ├── a.png
+│       ├── a_1day_pois.png
 │       ├── a_pois.png
 │       ├── b.png
+│       ├── b_1day_pois.png
 │       └── b_pois.png
+├── report.Rmd
+├── report.pdf
 └── run
     ├── run_EpiEstim.R
     ├── run_EpiInvert.R
     ├── run_EpiNow.R
     └── run_Pl_simple.R
 
-14 directories, 26 files
-
-
+14 directories, 35 files
 ```
