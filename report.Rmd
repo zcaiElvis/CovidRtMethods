@@ -44,6 +44,7 @@ s1 <- read.csv("data/processed/a.csv")
 s2 <- read.csv("data/processed/b.csv")
 plot(s1$y)
 plot(s1$r)
+
 plot(s2$y)
 plot(s2$r)
 
@@ -54,7 +55,7 @@ plot(s2$r)
 
 Question 1: data generated resembles each other, but differ by magnitude
 
-Answer 1: randomness accumulated, an increase in count at day t, makes a larger value possible for day t+1. Maybe the renewal equation is too flexible (or not robust)
+Answer 1: randomness accumulated, an increase in count at day t, makes a larger value possible for day t+1. Maybe the renewal equation is too flexible
 
 
 ```{r, fig.show="hold", out.width="50%"}
@@ -150,7 +151,7 @@ As mentioned above, we could smooth $R_t$ by running penalized least squares by 
 
 $$Loss(I_t - R_t*\sum_{a=1}^t I_{t-a} w_a) + \lambda* Penalty(R_t)$$
 
-Here, the loss function is chosen to be the negative log likelihood of observing $I_t$ given the mean of the Poisson distribution is $R_t*\sum_{a=1}^t I_{t-a} w_a$. The simplest penalty to smooth $R_t$ is the L-2 Norm. Under this configuration, the objective function is smooth and any optimization methods should work great
+Here, the loss function is chosen to be the probability of observing $I_t$ given the mean of the Poisson distribution is $R_t*\sum_{a=1}^t I_{t-a} w_a$. The simplest penalty to smooth $R_t$ is the L-2 Norm. Under this configuration, the objective function is smooth and any optimization methods should work great
 
 
 ```{r, fig.show="hold", out.width="50%"}
@@ -158,7 +159,7 @@ source("model/pls/penalties_smooth.R")
 source("run/run_Pl_simple.R")
 
 begin = Sys.time()
-pred_plss_r1 <- run_pl(s1, sid_ebola_shape, sid_ebola_scale, penalty=list("rl" = 20))
+pred_plss_r1 <- run_pl(s1, sid_ebola_shape, sid_ebola_scale, penalty=list("rl" = 50))
 print(paste("Optimizing for s1 takes", Sys.time()-begin))
 
 r1_plss_compare <- diag_plots(true_r = s1$r, pred_r = pred_plss_r1$estimate, iwt = s1_iwt, i = s1$y, cap = 10)
@@ -168,7 +169,7 @@ r1_plss_compare$oneday
 
 
 begin = Sys.time()
-pred_plss_r2 <- run_pl(s2, sid_ebola_shape, sid_ebola_scale, penalty=list("rl" = 20))
+pred_plss_r2 <- run_pl(s2, sid_ebola_shape, sid_ebola_scale, penalty=list("rl" = 50))
 print(paste("Optimizing for s1 takes", Sys.time()-begin))
 
 r2_plss_compare <- diag_plots(true_r = s2$r, pred_r = pred_plss_r2$estimate, iwt = s2_iwt, i = s2$y, cap = 10)
@@ -200,7 +201,7 @@ s4 <- read.csv("data/processed/d.csv")
 plot(s3$r)
 plot(s3$y, type="l")
 
-plot(s4$r)
+plot(s2$r)
 plot(s4$y, type="l")
 ```
 
@@ -223,10 +224,10 @@ r3_plss_compare$oneday
 
 
 begin = Sys.time()
-pred_plss_r4 <- run_pl(s4, sid_ebola_shape, sid_ebola_scale, penalty=list("rl" = 50))
+pred_plss_r4 <- run_pl(s4, sid_ebola_shape, sid_ebola_scale, penalty=list("rl" = 40))
 print(paste("Optimizing for s4 takes", Sys.time()-begin))
 
-r4_plss_compare <- diag_plots(true_r = s4$r, pred_r = pred_plss_r4$estimate, iwt = s4_iwt, i = s4$y, cap = 10)
+r4_plss_compare <- diag_plots(true_r = s2$r, pred_r = pred_plss_r4$estimate, iwt = s4_iwt, i = s4$y, cap = 10)
 
 r4_plss_compare$rt
 r4_plss_compare$oneday
@@ -238,7 +239,7 @@ r4_epiestim_compare <- compare_rt(s4$r, pred_epiestim_r4, cap=0)
 
 
 r4_mle_pred <- s4$y/s4_iwt
-r4_mle_compare <- diag_plots(true_r = s4$r, pred_r = r4_mle_pred, iwt = s4_iwt, i = s4$y, cap = 10)
+r4_mle_compare <- diag_plots(true_r = s2$r, pred_r = r4_mle_pred, iwt = s4_iwt, i = s4$y, cap = 10)
 # r4_mle_compare$rt
 ```
 
@@ -247,7 +248,7 @@ It doesn't seem very good. Now to have all three methods together side by side. 
 ```{r, fig.show="hold", out.width="50%"}
 
 
-ggplot(data = data.frame(idx=1:285, mle = r4_mle_pred[16:300], pls = pred_plss_r4$estimate[16:300], true=s4$r[16:300], epiestim = tail(pred_epiestim_r4, 285)), aes(x=idx))+
+ggplot(data = data.frame(idx=1:285, mle = r4_mle_pred[16:300], pls = pred_plss_r4$estimate[16:300], true=s2$r[16:300], epiestim = tail(pred_epiestim_r4, 285)), aes(x=idx))+
   geom_line(aes(y=true), color="blue")+
   geom_line(aes(y=pls), color = "red")+
   geom_line(aes(y=mle), color = "#009E73")+
@@ -351,6 +352,12 @@ plot(s1$r)
 ```
 
 
+### TODO
+1. Make penalty depends on case count
+
+2. Either make specialized ADMM work, or implement proximal gradient with line search
+
+
 # Discussion on Serial Interval Distribution
 
 Serial interval distribution is an estimate of the generation interval distribution. Serial interval distribution is the delay between the onset of primary and secondary cases, where the generation interval distribution is the infection of the primary and secondary cases.
@@ -401,4 +408,7 @@ $p(R_t|R_{t-1}, M_t) \sim U[0, R_{t-1} + \Delta]$ if $M_t = 1$
 6. What about variational Bayes methods, it turns Bayesian space exploration (posterior) style algorithm to optimization algorithm.
 
 
+# Big TODO
+
+1. Review "Stochastic Variational Inference for Bayesian Time Series Models" by Johnson and Willsky.
 

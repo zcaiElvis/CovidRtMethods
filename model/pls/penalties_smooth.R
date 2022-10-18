@@ -16,8 +16,9 @@ rmse_loss <- function(z, iwt, r){
 
 pois_loss <- function(z, iwt, r){
   p = r*iwt
-  loss = dpois(z, p)
-  return(sum(loss))
+  # loss = dpois(z, p)
+  loss = dpois(z, p, log=TRUE)
+  return(-sum(loss))
 }
 
 
@@ -28,6 +29,10 @@ pois_loss <- function(z, iwt, r){
 
 r_smooth_penalty <- function(r){
   return(sum(diff(r)^2))
+}
+
+r_smooth_penalty_varies <- function(r, i, penalty){
+  return(penalty*(i/10)*sum(diff(r)^2))
 }
 
 
@@ -53,5 +58,30 @@ smooth_loss <- function(data, par, penalties, loss_func){
   
   return(sum(all_losses))
 }
+
+
+# Function: Combining all losses of smooth loss functions
+# Parameters:
+# data - dataframe
+# column y - incidence
+# column iwt - sum(Iw)
+# par - vector of r
+# penalties - vector of lambda penalty
+
+smooth_loss <- function(data, par, penalties, loss_func, pen_change = FALSE){
+  dat_length <- length(data)
+  
+  kl <- loss_func(z = data$y, iwt = data$iwt, r = par)
+  if(pen_change){
+    rl <- r_smooth_penalty_varies(par, data$y, penalties$rl)
+  }
+  else{
+    rl <- penalties$rl* r_smooth_penalty(par)
+  }
+  all_losses = kl+rl
+  
+  return(sum(all_losses))
+}
+
 
 

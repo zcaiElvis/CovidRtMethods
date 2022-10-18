@@ -28,11 +28,12 @@ if (sys.nframe() == 0) {
   # plot(y3, type="l")
   # 
   # 
-  # shape_scale <- gamma_reparam(sid_ebola_mean, sid_ebola_sd)
-  # r4 <- c(rep(2, 100), rep(0.5, 200))
-  # y4 <- gen_with_rt_cycle(r2, shape_scale[1], shape_scale[2])
-  # write.csv(data.frame(r=r4, y=y4, idx=length(y4)), row.names = FALSE, file = "data/processed/d.csv")
-  # plot(y4, type="l")
+  shape_scale <- gamma_reparam(sid_ebola_mean, sid_ebola_sd)
+  r4 <- c(rep(2, 100), rep(0.5, 200))
+  y4 <- gen_with_rt_cycle(r2, shape_scale[1], shape_scale[2])
+  write.csv(data.frame(r=r4, y=y4, idx=length(y4)), row.names = FALSE, file = "data/processed/d.csv")
+  plot(y4, type="l")
+  plot(r4)
   
   # shape_scale <- gamma_reparam(sid_ebola_mean, sid_ebola_sd)
   # r5 <- c(rep(1.2, 100), rep(2, 100), rep(0.8, 100), rep(1, 100), rep(1.5, 100), rep(0.6, 100))
