@@ -20,6 +20,20 @@ get_owid_data <- function(country = "Canada", data_loc = "data/raw/owid_Sep5.csv
   return(covid)
 }
 
+get_owid_mp <- function(country = "Canada", data_loc = "data/raw/owid-monkeypox-data.csv",
+                          data_interval = c()){
+  data <- read.csv(data_loc, header=TRUE, sep=",")
+  mp <- data %>%
+    filter(location == country)%>%
+    select(c(date, new_cases)) %>%
+    rename(y = new_cases)
+  
+  if(length(data_interval) != 0){
+    mp <- data_from_interval(mp, data_interval)
+  }
+  return(mp)
+}
+
 # Function: Helper function, select columns within the date interval
 # Parameters:
   # covid: dataset

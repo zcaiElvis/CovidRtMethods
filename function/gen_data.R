@@ -1,5 +1,5 @@
-source("function/disc_gamma.R")
-source("constant/constant.R")
+# source("function/disc_gamma.R")
+# source("constant/constant.R")
 
 
 ### Function: Generating Incidence given Rt.

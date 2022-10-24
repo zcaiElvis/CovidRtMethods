@@ -1,0 +1,121 @@
+---
+title: "Oct_22"
+output: html_document
+date: '2022-10-23'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, fig.show="hold", out.width="50%"}
+source("../function/get_iwt.R")
+source("../function/disc_gamma.R")
+source("../constant/constant.R")
+
+### Import s3
+s3 <- read.csv("../data/processed/e.csv")
+s3_iwt <- get_iwt(s3$y, disc_gamma(1:nrow(s3), sid_ebola_shape, sid_ebola_scale))
+
+
+### Plotting
+plot(s3$r)
+plot(s3$y)
+
+```
+
+
+
+```{r}
+source("../model/pls/penalties_smooth.R")
+
+
+### Define objective
+ridge_obj <- function(data, par, loss_func, penalties){
+  
+  dat_length = nrow(data)
+  
+  loss = loss_func(z=data$y, iwt = s3_iwt, r = par)
+  r_pen <- penalties$r* r_smooth_penalty(par)
+  
+  obj_value = sum(loss+r_pen)
+  return(obj_value)
+}
+
+
+### Define intial values
+init_r <- rep(1, nrow(s3))
+
+result <- nlm(f=ridge_obj, p = init_r, iterlim =2000, print.level = 0, data=s3, penalties = list("r"=50), loss_func = rmse_loss)
+
+### Plotting result
+plot(result$estimate, type="l")
+```
+
+
+
+```{r}
+r_smooth_custom <- function(r, iwt){
+  
+  return(sum((log(iwt[1:length(iwt)-1]+1)*diff(r))^2))
+}
+
+
+ridge_obj <- function(data, par, loss_func, iwt = iwt, smooth_func, penalties){
+  
+  dat_length = nrow(data)
+  
+  loss = loss_func(z=data$y, iwt = iwt, r = par)
+  r_pen <- penalties$r* smooth_func(par, iwt)
+  
+  obj_value = sum(loss+r_pen)
+  return(obj_value)
+}
+
+
+result <- nlm(f=ridge_obj, p = init_r, iterlim =2000, print.level = 0, data=s3, penalties = list("r"=20),
+              loss_func = rmse_loss, smooth_func = r_smooth_custom, iwt = s3_iwt)
+
+```
+
+```{r}
+source("../function/make_plot.R")
+# library("tidyverse")
+# plot(result$estimate, type="l")
+# 
+# ggplot(data.frame(idx = 1:600, pred=result$estimate, true=s3$r), aes(x=idx))+
+#   geom_line(aes(x=idx, y = true, color="red"))+
+#   geom_line(aes(x=idx, y = pred, color="blue"))
+
+diag_plots(s3$r, result$estimate, s3_iwt, s3$y, cap=0)
+
+```
+
+
+```{r}
+source("../function/process_data.R")
+library("zoo")
+source("../function/make_plot.R")
+ca <- get_owid_data(data_loc = "../data/raw/owid_Sep5.csv")
+ca$y <- na.locf(ca$y)
+ca_iwt <- get_iwt(ca$y, disc_gamma(1:nrow(ca), sid_covid_shape, sid_covid_scale))
+init_r <- rep(1, nrow(ca))
+
+result_ca <- nlm(f=ridge_obj, p = init_r, iterlim =2000, print.level = 0, data=ca, penalties = list("r"=25),
+              loss_func = rmse_loss, smooth_func = r_smooth_custom, iwt = ca_iwt)
+
+# plot(result_ca$estimate, type="l")
+onedayhead(result_ca$estimate, ca_iwt, ca$y)
+```
+
+```{r}
+# source("../run/run_ridge.R")
+# s3_ridge_cv <- ridge_cv(s3_iwt, s3$y)
+# s3_ridge_r <- pls_ridge(s3_iwt, s3$y, lambda=s3_ridge_cv$optim_lambda)
+# print(s3_ridge_cv$optim_lambda)
+# plot(s3_ridge_r$r, type="l")
+# 
+# plot(pls_ridge(s3_iwt, s3$y, lambda=50)$r, type="l")
+# plot(pls_ridge(s3_iwt, s3$y, lambda=50)$r[150:600], type="l")
+```
+

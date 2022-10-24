@@ -74,7 +74,7 @@ get_obj = function(Y,W,R,D) sum(Y-W%*%R)^2 + sum(lambda*(D%*%R)^2)
 ```{r}
 
 ### Function: Cross validation on ridge regression
-CV <- function(W, Y, lambdas = exp(seq(0.1,10,0.2))){
+CV <- function(W, Y, D, lambdas = exp(seq(0.1,10,0.2))){
   ### Length of data
   dat_length = length(Y)
   
@@ -99,7 +99,7 @@ CV <- function(W, Y, lambdas = exp(seq(0.1,10,0.2))){
 
 lambdas = exp(seq(0.1,10,0.2))
 
-cv_scores = CV(W, Y, lambdas = lambdas)
+cv_scores = CV(W, Y, D, lambdas = lambdas)
 plot(log(cv_scores))
 ```
 
@@ -117,13 +117,113 @@ for (optim_lambda in lambdas[1:5]){
 ```
 
 
+```{r}
+source("../function/process_data.R")
+library("zoo")
+ca <- get_owid_data(data_loc = "../data/raw/owid_Sep5.csv")
+ca$y[which.max(ca$y)] = NA
+ca$y <- na.locf(ca$y)
+ca <- ca[100:(nrow(ca)-100),]
+plot(ca$y)
+```
+
+```{r, fig.show="hold", out.width="50%"}
+ca_iwt <- get_iwt(ca$y, disc_gamma(1:nrow(ca), sid_covid_shape, sid_covid_scale))
+# ca_iwt[1] <- ca_iwt[2]
+ca_iwt <- na.locf(ca_iwt)
+
+length(ca_iwt)
+
+W <- diag(ca_iwt)
+Y <- ca$y
+ca_length <- nrow(ca)
+
+D = diag(ca_length)
+D[row(D) == col(D)-1] = -1
+D = D[1:(nrow(D)-1),]
+
+print(dim(W))
+print(length(Y))
+print(dim(D))
+
+R_ca <- get_r(Y, W, D, lambda=10000)
+plot(R_ca, type="l")
+
+lambdas = exp(seq(2,10,0.2))
+CV_ca <- CV(W, Y, D, lambdas)
+
+
+### Plot the best 5
+for (optim_lambda in lambdas[1:5]){
+  optim_lambda
+  R = get_r(Y, W, D, optim_lambda)
+  plot(R, type="l")
+}
+
+```
+
+```{r}
+source("../function/process_data.R")
+source("../function/gen_data.R")
+
+mp <- get_owid_mp(data_loc = "../data/raw/owid-monkeypox-data.csv")
+head(mp)
+plot(mp$y, type="l")
+mp_length <- nrow(mp)
+
+sid_mp_mean
+sid_mp_sd
+
+sid_mp_shape = gamma_reparam(sid_mp_mean, sid_mp_sd)[1]
+sid_mp_scale = gamma_reparam(sid_mp_mean, sid_mp_sd)[2]
+
+sid_mp_shape
+sid_mp_scale
+mp_iwt <- get_iwt(mp$y, disc_gamma(1:nrow(mp), sid_mp_shape, sid_mp_scale))
+
+
+D = diag(mp_length)
+D[row(D) == col(D)-1] = -1
+D = D[1:(nrow(D)-1),]
+
+Y = mp$y
+
+W = diag(mp_iwt)
+
+
+CV_mp = CV(W, Y, D)
+
+plot(log(CV_mp))
+
+lambdas = exp(seq(0.1,13,0.2))
+
+ordered = order(CV_mp)
+lambdas = lambdas[ordered]
+
+for (optim_lambda in lambdas[1:5]){
+  R = get_r(Y, W, D, optim_lambda)
+  plot(R, type="l")
+}
+# 
+# R_mp <- get_r(Y, W, D, lambda=50)
+# 
+# plot(R_mp, type="l")
+
+```
+
+
+
+
+
+
+
 # Smoothness at head and tail
 
 1. Start and end of the synthetic datasets have low case counts, therefore prediction (using renewal equation) fluctuate. Model should take this into consideration and should not put too much effort in trying to smoothing those regions.
 
 2. Penalty change with size of case count?
 
-3. 
+3. Adding cyclic penalty term?
 
 
 
