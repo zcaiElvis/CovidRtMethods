@@ -1,0 +1,79 @@
+---
+title: "gen_data"
+output: pdf_document
+date: '2022-10-28'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r, fig.show="hold", out.width="50%"}
+source("../function/gen_syn_data.R")
+source("../function/disc_gamma.R")
+source("../constant/constant.R")
+source("../function/get_iwt.R")
+source("../function/disc_gamma.R")
+```
+
+
+# Creating & Visualizing synthetic dataset
+
+## D1
+
+With cyclic effect
+
+```{r, fig.show="hold", out.width="50%"}
+r1 <- c(rep(1.5, 100), rep(0.8, 100), rep(1.3, 100), rep(0.9, 100), rep(1, 100))
+r1_y <- gen_with_rt(r1, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 5)
+r1_iwt <- get_iwt(r1_y, disc_gamma(1:length(r1_y), shape=sid_covid_shape, scale=sid_covid_scale))
+
+d1 = data.frame(idx = 1:length(r1), r = r1, y = r1_y, iwt = r1_iwt)
+
+plot(r1)
+plot(r1_y, type = "l")
+
+write.csv(d1, "../data/processed/d1.csv", row.names = FALSE)
+```
+
+# D2
+
+With cyclic effect, smoothed 10 times
+
+```{r, fig.show="hold", out.width="50%"}
+r2 <- c(rep(1.5, 100), rep(0.8, 100), rep(1.3, 100), rep(0.9, 100), rep(1, 100))
+r2 <- smooth_rt(r2, 10)
+r2_y <- gen_with_rt(r2, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 5)
+r2_iwt <- get_iwt(r2_y, disc_gamma(1:length(r2_y), shape=sid_covid_shape, scale=sid_covid_scale))
+
+plot(r2)
+plot(r2_y, type = "l")
+```
+
+
+# D3
+```{r, fig.show="hold", out.width="50%"}
+r3 <- c(rep(1, 50), rep(0.8, 50), rep(1.8, 50), rep(1, 50), rep(1.3, 50), rep(0.8, 50),
+        rep(1.3, 50), rep(0.9, 50), rep(1.2, 50), rep(0.6, 50))
+r3_y <- gen_with_rt(r3, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 5)
+r3_iwt <- get_iwt(r3_y, disc_gamma(1:length(r3_y), shape=sid_covid_shape, scale=sid_covid_scale))
+
+plot(r3)
+plot(r3_y, type = "l")
+```
+
+
+# D4
+```{r, fig.show="hold", out.width="50%"}
+r4 <- c(rep(1, 50), rep(0.8, 50), rep(1.8, 50), rep(1, 50), rep(1.3, 50), rep(0.8, 50),
+        rep(1.3, 50), rep(0.9, 50), rep(1.2, 50), rep(0.6, 50))
+r4 <- smooth_rt(r4, 10)
+r4_y <- gen_with_rt(r4, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 5)
+r4_iwt <- get_iwt(r4_y, disc_gamma(1:length(r4_y), shape=sid_covid_shape, scale=sid_covid_scale))
+
+plot(r4)
+plot(log(r4_y), type = "l")
+```

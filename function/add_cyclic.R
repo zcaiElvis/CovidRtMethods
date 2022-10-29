@@ -1,9 +1,3 @@
-
-
-
-
-
-
 ### Function: generate y based on Rt, with added cyclic effect
 gen_with_rt_cycle <- function(rt, g_shape = 5, g_scale = 5){
   rt_len <- length(rt)
