@@ -1,0 +1,90 @@
+---
+title: "Oct30"
+output: pdf_document
+date: '2022-10-31'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, fig.show="hold", out.width="50%"}
+source("../model/pls/ridge.R")
+source("../model/pls/penalties_smooth.R")
+source("../function/make_plot.R")
+d2 <- read.csv("../data/processed/d1.csv")
+
+plot(d2$r)
+plot(d2$y)
+```
+
+
+
+```{r}
+# ridge_cv <- CV(W = d2$iwt, Y=d2$y)
+# plot(log(ridge_cv$scores))
+# ridge_cv$lambdas[1:5]
+
+```
+
+
+```{r}
+get_loss <- function(r, W, Y, lambda){
+  dat_length = length(Y)
+  D = build_D(dat_length)
+  W = diag(W)
+  
+  loss = sum((Y-W%*%r)^2/dat_length) + lambda*sum((D%*%r)^2)
+
+  return(loss)
+}
+  
+
+```
+
+```{r, fig.show="hold", out.width="50%"}
+# lambda = ridge_cv$lambdas[1]
+lambda = 1000
+ridge_r <- get_r(d2$iwt, d2$y, lambda)
+diag_ridge <- diag_plots(d2$r, ridge_r, d2$iwt, d2$y, cap=0)
+diag_ridge$rt
+diag_ridge$oneday
+
+get_loss(ridge_r, d2$iwt, d2$y, lambda)
+
+```
+
+
+```{r, fig.show="hold", out.width="50%"}
+ridge_obj <- function(data, par, loss_func, iwt = iwt, smooth_func, penalties, pen_func = log, ...){
+  
+  dat_length = nrow(data)
+  
+  loss = loss_func(z=data$y, iwt = iwt, r = par)
+  
+  r_pen <- penalties$r* smooth_func(par)
+  
+  obj_value = sum(loss+r_pen)
+  
+  return(obj_value)
+}
+
+r_smooth_penalty <- function(r){
+  return(sum(diff(r)^2))
+}
+
+normal_loss <- function(z, iwt, r){
+  return(sum((z-r*iwt)^2))
+}
+  
+
+init_r = rep(1, nrow(d2))
+
+result <- nlm(f=ridge_obj, p = init_r, iterlim =2000, print.level = 0, data=d2, penalties = list("r"=lambda), loss_func = normal_loss, smooth_func = r_smooth_penalty, iwt = d2$iwt)
+
+diag_gd <- diag_plots(d2$r, result$estimate, d2$iwt, d2$y, cap=0)
+diag_gd$rt
+diag_gd$oneday
+
+get_loss(result$estimate, d2$iwt, d2$y, lambda)
+```

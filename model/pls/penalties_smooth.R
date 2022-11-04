@@ -7,10 +7,8 @@ library(Metrics)
   # iwt - poisson mean
   # r - effective reproduction number
   # dat_length - length of data
-rmse_loss <- function(z, iwt, r){
-  p = r*iwt
-  loss = rmse(z, p)
-  return(loss)
+normal_loss <- function(z, iwt, r){
+  return(sum((z-r*iwt)^2))
 }
 
 

@@ -8,29 +8,25 @@ run_epinow <- function(data, p1, p2){
   rdate <- data.frame(date =read.csv("data/processed/rdate.csv"))
   rdate <- rdate$x[1:data_size]
   
-  generation_time = list(mean = p1, mean_sd = 0.1, sd = p2, sd_sd = 0.1, max=30)
-  result_a <- epinow(reported_cases = data.frame(date = as.Date(rdate), confirm=data$y), generation_time = generation_time,
-                     rt = rt_opts(prior=list(mean=1.5, sd=1)),
-                     stan = stan_opts(cores=2, samples = 1000))
+  generation_time = list(mean = p1, mean_sd = 0.01, sd = p2, sd_sd = 0.01, max=30)
+  
+  result_a <- epinow(reported_cases = data.frame(date = as.Date(rdate), confirm=data$y), 
+                     generation_time = generation_time,
+                     rt = rt_opts(prior=list(mean=1.5, sd=3)),
+                     stan = stan_opts(cores=4, samples = 1000))
 
-  return(result_a$estimates$summarised$mean)
+  return(result_a)
 }
 
 
-sim_a <- read.csv("data/processed/a.csv")
-sim_b <- read.csv("data/processed/b.csv")
+d <- read.csv("data/processed/d2.csv")
 
+epinow <- run_epinow(d, sid_covid_mean, sid_covid_sd)
 
-true_r1 <- sim_a$r
-pred_r1 <- run_epinow(sim_a, sid_ebola_mean, sid_ebola_sd)
-compare1 <- compare_rt(true_r1, pred_r1)
-ggsave("a.png",plot = compare1, path = "plot/epinow")
+ggsave("epinow_d2.png", plot =plot(summary(epinow, type = "parameters", params = "R")$median),
+       path = "plot/epinow")
 
-true_r2 <- sim_b$r
-pred_r2 <- run_epinow(sim_b, sid_ebola_mean, sid_ebola_sd)
-compare2 <- compare_rt(true_r2, pred_r2)
-ggsave("b.png",plot=compare2, path="plot/epinow")
-
+write.csv(summary(epinow, type = "parameters", params = "R"), file = "data/results/epinow2_d2.csv")
 
 
 

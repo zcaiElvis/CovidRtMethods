@@ -17,8 +17,9 @@ source("../function/get_iwt.R")
 source("../function/disc_gamma.R")
 source("../constant/constant.R")
 
-s5 <- read.csv("../data/processed/e.csv")
-s5_iwt <- get_iwt(s5$y, disc_gamma(1:nrow(s5), sid_ebola_shape, sid_ebola_scale))
+s5 <- read.csv("../data/processed/d1.csv")
+# s5_iwt <- get_iwt(s5$y, disc_gamma(1:nrow(s5), sid_ebola_shape, sid_ebola_scale))
+s5_iwt <- s5$iwt
 
 plot(s5$r)
 plot(s5$y, type = "l")
@@ -65,19 +66,19 @@ ridge_obj <- function(data, par, loss_func, iwt = iwt, smooth_func, penalties, p
 
 
 ```{r}
-init_r = rep(1, nrow(s5))
+init_r = rep(1.5, nrow(s5))
 ```
 
 ```{r}
 source("../model/pls/penalties_smooth.R")
 
-result <- nlm(f=ridge_obj, p = init_r, iterlim =2000, print.level = 0, data=s5, penalties = list("r"=20), loss_func = rmse_loss, smooth_func = r_smooth_c1, pen_func = log, iwt = s5_iwt)
+result <- nlm(f=ridge_obj, p = init_r, iterlim =2000, print.level = 0, data=s5, penalties = list("r"=1), loss_func = rmse_loss, smooth_func = r_smooth_c1, pen_func = sqrt, iwt = s5_iwt)
 ```
 
 
 The result looks like
 
-```{r}
+```{r, fig.show="hold", out.width="50%"}
 source("../function/make_plot.R")
 diags <- diag_plots(s5$r, result$estimate, s5_iwt, s5$y, cap=0)
 diags$rt
@@ -87,16 +88,16 @@ diags$oneday
 Comparing to the closed form solution:
 
 ```{r, fig.show="hold", out.width="50%"}
-source("../model/pls/ridge.R")
-source("../function/make_plot.R")
-cv <- CV(s5_iwt, s5$y)
-plot(log(cv$scores))
-ridge_r <- get_r(s5_iwt, s5$y, lambda=cv$lambdas[1])
-
-cv$lambdas[1]
-diags_ridge <- diag_plots(s5$r, ridge_r, s5_iwt, s5$y, cap=100)
-diags_ridge$rt
-diags_ridge$oneday
+# source("../model/pls/ridge.R")
+# source("../function/make_plot.R")
+# cv <- CV(s5_iwt, s5$y)
+# plot(log(cv$scores))
+# ridge_r <- get_r(s5_iwt, s5$y, lambda=cv$lambdas[1])
+# 
+# cv$lambdas[1]
+# diags_ridge <- diag_plots(s5$r, ridge_r, s5_iwt, s5$y, cap=100)
+# diags_ridge$rt
+# diags_ridge$oneday
 ```
 
 

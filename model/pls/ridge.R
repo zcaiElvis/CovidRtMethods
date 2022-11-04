@@ -1,13 +1,13 @@
 
 
-
-### Build the n-1 by n difference matrix
+### Function: Build the n-1 by n difference matrix
 build_D <- function(dat_length){
   D = diag(dat_length)
   D[row(D) == col(D)-1] = -1
   D = D[1:(nrow(D)-1),]
   return(D)
 }
+
 
 
 ### Function: calculate ridge regression from closed-form solution
@@ -18,8 +18,38 @@ get_r <- function(W, Y, lambda=10){
   dat_length = length(Y)
   D = build_D(dat_length)
   W = diag(W)
-  return(solve((t(W)%*%W-lambda*t(D)%*%D))%*%t(W)%*%Y)
-} 
+  return(solve((t(W)%*%W+lambda*t(D)%*%D))%*%t(W)%*%Y)
+}
+
+
+
+### Get Loss function value
+get_loss <- function(W, Y, r, lambda){
+  dat_length = length(Y)
+  D = build_D(dat_length)
+  W = diag(W)
+  
+  loss = sum((Y-W%*%r)^2/dat_length) + lambda*sum((D%*%r)^2)
+  return(loss)
+}
+
+
+
+
+### Function: get hat matrix
+### H = W'(W'W+lam*D'D)W
+get_hat <- function(W, D, lambda){
+  H = W %*% solve(t(W)%*%W + lambda*t(D)%*%D)%*%t(W)
+  return(H)
+}
+
+
+get_score <- function(W, Y, D, I, lambda){
+  H = get_hat(W, D, lambda)
+  score = mean((((I-H)%*%Y)/(1-diag(H)))^2)
+  return(score)
+}
+
 
 
 ### Function: LOOCV for ridge regression
@@ -27,33 +57,27 @@ get_r <- function(W, Y, lambda=10){
 ### Return: score and lambda from best (lowest score) to worst 
 
 CV <- function(W, Y, lambdas = exp(seq(0.1,10,0.2))){
-  ### Length of data
+  
+  ### Formatting data
   dat_length = length(Y)
-  
-  ### Get Difference matrix
-  D = build_D(dat_length)
-  
-  ### Make W into matrix
   W = diag(W)
-  
+  D = build_D(dat_length)
+  I = diag(dat_length)
+
   ### Get grid of lambda
   cv_scores = c()
-  best = 0
   
-  I = diag(rep(1, dat_length))
-  
+  ## Loop through all possible lambdas
   for (lambda in lambdas){
-    L = solve((t(W)%*%W-lambda*t(D)%*%D))%*%t(W)
-    H = I-t(L)%*%W
-    H_tilde = diag(diag(H))
-    HHY = H%*%solve(H_tilde)%*%Y
-    E_cv = 1/(dat_length)*sum(HHY^2)
+    E_cv = get_score(W, Y, D, I, lambda)
     cv_scores = c(cv_scores, E_cv)
   }
+  
+  ## Sort the lambda based on size of cv_scores
   output = list()
   ordered = order(cv_scores)
   lambdas = lambdas[ordered]
   
-
+  ### Return data frame of sorted cv_scores and lambdas
   return(data.frame(scores = cv_scores[ordered], lambdas = lambdas[ordered]))
 }

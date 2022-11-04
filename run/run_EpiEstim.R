@@ -10,7 +10,7 @@ run_epiestim <- function(data, p1, p2){
                                 config = make_config(list(
                                   mean_si = p1, 
                                   std_si = p2)))
-  return(epiestim_result$R$`Mean(R)`)
+  return(epiestim_result$R)
 }
 
 

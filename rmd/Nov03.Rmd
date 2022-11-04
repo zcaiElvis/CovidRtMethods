@@ -1,0 +1,58 @@
+---
+title: "Nov03"
+output: pdf_document
+date: '2022-11-04'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Gradient descent
+
+```{r}
+source("../model/pls/ridge.R")
+set.seed(11121)
+
+dat_length = 100
+sd = 100
+lambda = 2
+
+x <- 1:dat_length
+y <- 10*x + rnorm(dat_length, 0, sd = sd)
+
+plot(y, type = "l")
+```
+
+
+```{r}
+cv_result <- CV(x, y)
+fit_close <- get_r(x, y, lambda=lambda)
+```
+
+
+```{r}
+obj <- function(r, x, y, lambda){
+  return(sum((y-r*x)^2) + lambda*sum(diff(r)^2))
+}
+
+result = nlm(obj, rep(1, dat_length), x = x, y = y, lambda = lambda)
+```
+
+```{r}
+lambda
+get_loss(x, y, fit_close, lambda)
+get_loss(x, y, result$estimate, lambda)
+```
+
+```{r, fig.show="hold", out.width="50%"}
+library(tidyverse)
+
+ggplot(data=data.frame(idx=1:dat_length, closeform = fit_close, gd = result$estimate), aes(x=idx))+
+  geom_line(aes(x=idx,y=closeform), color = "blue")+
+  geom_line(aes(x=idx,y=fit_close), color = "red", alpha = 0.6)+
+  theme_bw()
+
+```

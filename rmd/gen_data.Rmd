@@ -1,5 +1,5 @@
 ---
-title: "gen_data"
+title: "Generating Synthetic Data"
 output: pdf_document
 date: '2022-10-28'
 ---
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-```{r, fig.show="hold", out.width="50%"}
+```{r, message=FALSE, results='hide'}
 source("../function/gen_syn_data.R")
 source("../function/disc_gamma.R")
 source("../constant/constant.R")
@@ -21,6 +21,27 @@ source("../function/disc_gamma.R")
 
 
 # Creating & Visualizing synthetic dataset
+
+All synthetic data stored in "../data/processed"
+
+- Data contain three columns:
+
+1. r: Synthetic reproduction number
+2. y: Daily case count, generated from r
+3. idx: Index of indicating time 
+4. iwt: $\sum_{a=1}I_{t-a}w_a$
+
+- Daily case counts all generated r, with serial interval distribution of EBOLA. SID of covid and other diseases are in "../constant/constant.R"
+
+
+
+## Create new folder to generate results
+
+```{r}
+current_t <- Sys.time()
+dir.create(file.path("..", "data", "processed", current_t))
+
+```
 
 ## D1
 
@@ -36,7 +57,9 @@ d1 = data.frame(idx = 1:length(r1), r = r1, y = r1_y, iwt = r1_iwt)
 plot(r1)
 plot(r1_y, type = "l")
 
-write.csv(d1, "../data/processed/d1.csv", row.names = FALSE)
+# write.csv(d1, "../data/processed/d1.csv", row.names = FALSE)
+
+write.csv(d1, file.path("..", "data", "processed", current_t, "d1.csv"), row.names = FALSE)
 ```
 
 # D2
@@ -46,11 +69,16 @@ With cyclic effect, smoothed 10 times
 ```{r, fig.show="hold", out.width="50%"}
 r2 <- c(rep(1.5, 100), rep(0.8, 100), rep(1.3, 100), rep(0.9, 100), rep(1, 100))
 r2 <- smooth_rt(r2, 10)
-r2_y <- gen_with_rt(r2, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 5)
+r2_y <- gen_with_rt(r2, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 0)
 r2_iwt <- get_iwt(r2_y, disc_gamma(1:length(r2_y), shape=sid_covid_shape, scale=sid_covid_scale))
+
+d2 = data.frame(idx = 1:length(r2), r = r2, y = r2_y, iwt = r2_iwt)
 
 plot(r2)
 plot(r2_y, type = "l")
+
+# write.csv(d2, "../data/processed/d2.csv", row.names = FALSE)
+write.csv(d2, file.path("..", "data", "processed", current_t, "d2.csv"), row.names = FALSE)
 ```
 
 
@@ -68,12 +96,43 @@ plot(r3_y, type = "l")
 
 # D4
 ```{r, fig.show="hold", out.width="50%"}
-r4 <- c(rep(1, 50), rep(0.8, 50), rep(1.8, 50), rep(1, 50), rep(1.3, 50), rep(0.8, 50),
-        rep(1.3, 50), rep(0.9, 50), rep(1.2, 50), rep(0.6, 50))
+source("../function/gen_syn_data.R")
+r4 <- c(rep(1, 50), rep(0.8, 50), rep(1.8, 50), rep(1, 50), rep(1.3, 50), rep(0.8, 50), rep(1.3, 50), rep(0.9, 50), rep(1.2, 50), rep(0.6, 50))
 r4 <- smooth_rt(r4, 10)
 r4_y <- gen_with_rt(r4, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 5)
+
 r4_iwt <- get_iwt(r4_y, disc_gamma(1:length(r4_y), shape=sid_covid_shape, scale=sid_covid_scale))
+ 
+d4 = data.frame(idx = 1:length(r4), r = r4, y = r4_y, iwt = r4_iwt)
+
+# write.csv(d4, "../data/processed/d4.csv", row.names = FALSE)
+
 
 plot(r4)
-plot(log(r4_y), type = "l")
+plot(r4, type = "l")
+```
+
+
+
+
+
+
+# D5
+
+```{r, fig.show="hold", out.width="50%"}
+x <- 1:100
+r5 <- 5*sin(7*x)
+for(i in 1:length(x)){
+  r5[i] = max(0.5, r5[i])
+}
+
+d5_y <- gen_with_rt(r5, init_i = 10, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 0)
+
+# r5_iwt <- get_iwt(r5_y, disc_gamma(1:length(r5_y), shape=sid_covid_shape, scale=sid_covid_scale))
+
+
+
+plot(d5_y, type = "l")
+
+
 ```

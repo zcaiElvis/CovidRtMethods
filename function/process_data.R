@@ -20,6 +20,12 @@ get_owid_data <- function(country = "Canada", data_loc = "data/raw/owid_Sep5.csv
   return(covid)
 }
 
+## Function: Read from owid Monkeypox dataset
+# Parameters:
+# country
+# data_loc
+# data_interval: interval of date to extract from, default to all data
+
 get_owid_mp <- function(country = "Canada", data_loc = "data/raw/owid-monkeypox-data.csv",
                           data_interval = c()){
   data <- read.csv(data_loc, header=TRUE, sep=",")
@@ -44,5 +50,8 @@ data_from_interval <- function(covid, date_interval){
   dat <- subset(dat, date >= date_interval[1] & date <= date_interval[2])
   return(dat)
 }
+
+
+# get_mobility <- function()
 
 # ca <- get_owid_data(data_interval = c("2021-09-10", "2021-09-12"))
