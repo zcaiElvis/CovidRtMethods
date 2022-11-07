@@ -44,6 +44,7 @@ get_hat <- function(W, D, lambda){
 }
 
 
+### Function: return score of a lambda
 get_score <- function(W, Y, D, I, lambda){
   H = get_hat(W, D, lambda)
   score = mean((((I-H)%*%Y)/(1-diag(H)))^2)
@@ -73,11 +74,37 @@ CV <- function(W, Y, lambdas = exp(seq(0.1,10,0.2))){
     cv_scores = c(cv_scores, E_cv)
   }
   
-  ## Sort the lambda based on size of cv_scores
-  output = list()
-  ordered = order(cv_scores)
-  lambdas = lambdas[ordered]
+  return(data.frame(lambdas = lambdas, scores = cv_scores))
   
-  ### Return data frame of sorted cv_scores and lambdas
-  return(data.frame(scores = cv_scores[ordered], lambdas = lambdas[ordered]))
+  # Sort the lambda based on size of cv_scores
+  # ordered = order(cv_scores)
+  # 
+  # cv_scores = cv_scores[ordered]
+  # lambdas = lambdas[ordered]
+  # 
+  # ### Return data frame of sorted cv_scores and lambdas
+  # return(data.frame(scores = cv_scores, lambdas = lambdas))
 }
+
+
+
+
+
+
+
+
+
+cv_loss <- function(w, Y, lambdas = exp(seq(0.1,10,0.2))){
+  losses = c()
+  for(lambda in lambdas){
+    r = get_r(w, Y, lambda)
+    loss = mean((Y - w*r)^2) + sum((diff(r))^2)
+    losses = c(losses, loss)
+  }
+  
+  best_lambda = lambdas[which.max(losses)]
+  return(best_lambda)
+}
+
+
+

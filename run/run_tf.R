@@ -1,19 +1,19 @@
-source("function/get_iwt.R")
-source("function/disc_gamma.R")
-source("constant/constant.R")
-library("glmgen")
-### Import s1
-s1 <- read.csv("data/processed/a.csv")
-s1_iwt <- get_iwt(s1$y, disc_gamma(1:nrow(s1), sid_ebola_shape, sid_ebola_scale))
+library(Rcpp)
+library(RcppArmadillo)
+library(tidyverse)
+library(testthat)
 
 
 
-tf <- glmgen::trendfilter(x = s1_iwt, y = s1$y, k = 0, family="gaussian")
+source("model/tf/r/admm_solvers.R")
 
-lambdas = summary(tf)[,2]
-rss = summary(tf)[,3]
-optim_lambda = lambdas[order(rss)[1]]
+d <- read.csv("data/processed/d2.csv")
 
-betas <- data.frame(tf$beta)
 
-plot(tf$beta[,15])
+r <- gtf_solver(1000, y = d$y, x = d$iwt, k=0, para = 0.01)
+
+
+plot(c(r$theta/d$iwt)[30:500])
+
+
+

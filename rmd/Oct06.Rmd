@@ -1,28 +1,40 @@
+---
+title: "Oct6"
+output: pdf_document
+date: "2022-11-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
 library("tidyverse")
 library("dplyr")
-source("constant/constant.R")
-source("function/disc_gamma.R")
-source("function/make_plot.R")
-source("model/pls/ridge.R")
+source("../constant/constant.R")
+source("../function/disc_gamma.R")
+source("../function/make_plot.R")
+source("../model/pls/ridge.R")
 
 
 ### Importing Rt estimation package
-library(EpiEstim)
-source("run/run_EpiEstim.R")
+# library(EpiEstim)
+source("../run/run_EpiEstim.R")
 
-source("model/pls/ridge.R")
+source("../model/pls/ridge.R")
 
-source("run/run_pf_all.R")
+source("../run/run_pf_all.R")
 
-source("run/run_ridge_gd.R")
+source("../run/run_ridge_gd.R")
 
 ### Importing data, no cyclic effect
 
-d = read.csv("data/processed/d2.csv")
-plot(d$y, type = "l")
-plot(d$r, type = "l")
+# d = read.csv("../data/processed/d2.csv")
+# plot(d$y, type = "l")
+# plot(d$r, type = "l")
 
-
+```
 ### Run methods
 
 ## EpiEstim
@@ -43,7 +55,7 @@ plot(ridge_gd$estimate, type = "l")
 
 ## Particle Filter
 pf <- run_pf(d, 0.5)
-# plot(pf$filter.mean.x, type = "l")
+plot(pf$filter.mean.x, type = "l")
 
 ## EpiNow
 epin <- read.csv("data/results/epinow2_d2.csv")
@@ -64,3 +76,4 @@ all_rt %>%
   ylab("Rt")
 
 
+```

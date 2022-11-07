@@ -26,9 +26,14 @@ y <- 10*x + rnorm(dat_length, 0, sd = sd)
 plot(y, type = "l")
 ```
 
-
 ```{r}
 cv_result <- CV(x, y)
+plot(cv_result$lambdas)
+lambda = cv_result$lambdas[1]
+```
+
+
+```{r}
 fit_close <- get_r(x, y, lambda=lambda)
 ```
 
@@ -53,6 +58,28 @@ library(tidyverse)
 ggplot(data=data.frame(idx=1:dat_length, closeform = fit_close, gd = result$estimate), aes(x=idx))+
   geom_line(aes(x=idx,y=closeform), color = "blue")+
   geom_line(aes(x=idx,y=fit_close), color = "red", alpha = 0.6)+
-  theme_bw()
+  theme_bw()+
+  ylim(c(1,20))
+
+```
+
+Quick CV function
+
+```{r}
+
+quick_cv <- function(w, y, lambda){
+  dat_length = length(y)
+  W = diag(w)
+  D = build_D(dat_length)
+  I = diag(rep(1, dat_length))
+  
+  H = W %*% solve(t(W)%*%W + lambda*t(D)%*%D) %*% t(W)
+  
+  E <- (I-H)%*%Y
+  B <- (1- diag(H))^2
+  
+  mean(E/B)
+  
+}
 
 ```

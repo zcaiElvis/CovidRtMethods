@@ -1,7 +1,7 @@
 library("pomp")
-source("constant/constant.R")
-source("function/disc_gamma.R")
-source("function/make_plot.R")
+# source("constant/constant.R")
+# source("function/disc_gamma.R")
+# source("function/make_plot.R")
 
 
 ### Transition equation
@@ -31,8 +31,8 @@ meas_pois_interval <- function(t, x, s, T, Y, y, g_shape, g_scale, ..., log){
 
 ### Run particle filter
 
-run_pf <- function(d){
-  init_vals = c(sdlog = 0.1,
+run_pf <- function(d, sdlog){
+  init_vals = c(sdlog = sdlog,
                 g_shape = sid_covid_shape, g_scale = sid_covid_scale)
   
   pf <- pfilter(
@@ -41,7 +41,7 @@ run_pf <- function(d){
     t0 = 1,
     data = d,
     params = init_vals,
-    rinit = function(x0, ...){c(x=1, s = 0.05)},
+    rinit = function(x0, ...){c(x=1.5, s = 0.1)},
     rprocess = tran,
     dmeasure = meas_pois_interval,
     T=t,
@@ -53,10 +53,21 @@ run_pf <- function(d){
     # pred.var = TRUE,
   )
   
-  result = as.data.frame(pf)
+  # result = as.data.frame(pf)
   
   return(result)
 }
+
+
+source("function/gen_syn_data.R")
+source("constant/constant.R")
+souce("function/disc_gamma.R")
+d <- read.csv("data/processed/d2.csv")
+
+result <- run_pf(d, 0.1)
+
+meaniwt <- result$filter.mean.x*disc_gamma(c())
+
 
 
 
