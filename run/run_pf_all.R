@@ -59,14 +59,14 @@ run_pf <- function(d, sdlog){
 }
 
 
-source("function/gen_syn_data.R")
-source("constant/constant.R")
-souce("function/disc_gamma.R")
-d <- read.csv("data/processed/d2.csv")
-
-result <- run_pf(d, 0.1)
-
-meaniwt <- result$filter.mean.x*disc_gamma(c())
+# source("function/gen_syn_data.R")
+# source("constant/constant.R")
+# source("function/disc_gamma.R")
+# d <- read.csv("data/processed/d2.csv")
+# 
+# result <- run_pf(d, 0.1)
+# 
+# meaniwt <- result$filter.mean.x*disc_gamma(c())
 
 
 

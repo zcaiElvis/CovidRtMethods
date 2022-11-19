@@ -1,0 +1,37 @@
+---
+title: "Nov_09"
+output: pdf_document
+date: "2022-11-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Deriving ADMM updates
+
+
+<!-- Let $Y_t \sim Pois(\lambda = R_t *\sum_{a=1} Y_{t-a} w_{a})$, where $Y_t$ is the incidence case count, and $R_t$ is the effective reproduction number at day $t$. $w_{a}$ where $a \in [1:t]$ is the serial interval distribution at day $a$. -->
+
+The scaled augmented Lagrangian is:
+
+<!-- taking $x_i = \log(w_ir_i), \phi(x_i) = x_i$ -->
+
+$$argmin_r L(r, z, u) = argmin_{r} \frac{1}{n} \sum \phi(x_i ) - y_ix_i + \lambda ||z||_1 + \frac{p}{2} ||D*\log(r) - z +u||^2_2 -\frac{p}{2}||u||_2^2 $$
+Treating the constraints as $z = D*log(r)$
+
+The updating steps are:
+
+$r^{t+1} = argmin_r \frac{1}{n} \sum_{i=1} \phi(x_i) - y_ix_i + \frac{p}{2}||D*\log(r^t) - z^t +u^t||^2_2$
+
+$u^{t+1} = argmin_u \lambda||u^t||_1^1 + + \frac{p}{2}||D*\log(r^{t+1}) - z^t +u^t||^2_2$
+
+$z^{t+1} = z^t + u^{t+1} - D*log(r^{t+1})$
+
+
+<!-- To solve the update step for $r$ would require inversing the matrix $D$. So linearize it we get: -->
+
+<!-- $r^{t+1} = argmin_r \frac{1}{n} \sum_{i=1} \phi(x_i) - y_ix_i + p(D^TD*\log(r^o) - D^Tz^t) +u^t||^2_2$ -->
+
+
+

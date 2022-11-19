@@ -1,4 +1,5 @@
-
+library(dplyr)
+library(zoo)
 
 ### Function: Build the n-1 by n difference matrix
 build_D <- function(dat_length){
@@ -75,15 +76,6 @@ CV <- function(W, Y, lambdas = exp(seq(0.1,10,0.2))){
   }
   
   return(data.frame(lambdas = lambdas, scores = cv_scores))
-  
-  # Sort the lambda based on size of cv_scores
-  # ordered = order(cv_scores)
-  # 
-  # cv_scores = cv_scores[ordered]
-  # lambdas = lambdas[ordered]
-  # 
-  # ### Return data frame of sorted cv_scores and lambdas
-  # return(data.frame(scores = cv_scores, lambdas = lambdas))
 }
 
 
@@ -98,13 +90,48 @@ cv_loss <- function(w, Y, lambdas = exp(seq(0.1,10,0.2))){
   losses = c()
   for(lambda in lambdas){
     r = get_r(w, Y, lambda)
-    loss = mean((Y - w*r)^2) + sum((diff(r))^2)
+    loss = mean((Y - w*r)^2 + sum((diff(r))^2))
     losses = c(losses, loss)
   }
   
-  best_lambda = lambdas[which.max(losses)]
-  return(best_lambda)
+  best_lambda = lambdas[which.min(losses)]
+  output = list()
+  output$best_lambda = best_lambda
+  output$losses = losses
+  return(output)
 }
 
 
+cv_genlasso <- function(w, Y, k = 3, lambdas = exp(seq(0.1, 10, 0.2))){
+  dat_length = length(Y)
+  kindex = c(1:dat_length)%%k + 1
+  data = data.frame(idx = 1:dat_length, kindex = kindex, w = w, Y = Y)
+  scores = matrix(0, nrow = k, ncol = length(lambdas))
+  
+  for(i in 1:k){
+    
+    for(j in 1:length(lambdas)){
+      
+      train = data[data$kindex != i,]
+      test = filter(data, kindex == i)
+      
+      pred_r <- get_r(W= train$w, Y = train$Y, lambda = lambdas[j])
+      
+      r <- rep(0, dat_length)
+      r[train$idx] = pred_r
+      r[test$idx] = NA
+      r <- na.fill(r, "extend")
+      # scores[i,j] = sum(Y-w*r)^2 + lambda*sum(diff(r)^2)
+      filled_r <- r[test$idx]
+      
+      scores[i,j] = sum(test$Y - test$w*filled_r)^2 + lambdas[j]*sum(diff(filled_r)^2)
+    }
+  }
+  scores = apply(scores, MARGIN = 2, mean)
+  
+  output = data.frame(lambdas = lambdas, scores = scores)
+  return(output)
+}
 
+# d = read.csv("data/processed/d2.csv")
+# genl <- cv_genlasso(d$iwt, d$y, k = 5, lambda = exp(1:30))

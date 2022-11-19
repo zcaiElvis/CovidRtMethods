@@ -61,5 +61,5 @@ ggplot(data.frame(idx=1:dat_length, cv = best_r_cv, loss = best_r_loss, true = r
 
 
 
-test_r <- get_r(d$iwt, d$y, 100000)
+test_r <- get_r(d$iwt, d$y, 10000000)
 plot(test_r, type = "l")

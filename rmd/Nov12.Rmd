@@ -1,0 +1,218 @@
+---
+title: "Nov 12 Update Report"
+output: beamer_presentation
+date: "2022-11-13"
+fontsize: 9pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+echo=FALSE
+fig.show="hold"
+out.width="50%"
+out.height = "50%"
+cache=TRUE
+cache.lazy = TRUE
+
+fig.width=0.5
+fig.height=0.5
+
+
+library(tidyverse)
+library(dplyr)
+
+source("../model/pls/ridge.R")
+
+```
+
+
+```{r}
+d2 = read.csv("../data/processed/d2.csv")
+```
+
+## Last Time
+
+- Showed and compared results of 5 methods
+- Updates on penalized least squares
+
+
+## Performance of Ridge regression
+
+```{r, out.height="50%", cache.lazy=TRUE, autodep=TRUE}
+cv_old <- cv_loss(d2$iwt, d2$y, lambdas = exp(1:40))
+ridge <- get_r(d2$iwt, d2$y, lambda = cv_old$best_lambda)
+
+ggplot(data.frame(idx=d2$idx, true = d2$r, pred = ridge), aes(x=idx))+
+  geom_line(aes(x=idx, y = true), color = "blue")+
+  geom_line(aes(x=idx, y = pred), color = "red")+
+  theme_bw()+
+  xlab("time")+
+  ylab("R")
+
+```
+
+"Optimal" lambda chosen is
+```{r}
+cv_old$best_lambda
+```
+## simulation
+
+```{r}
+plot(d2$y, type = "l")
+
+```
+
+## Choice of penalty
+
+- How I choose lambda
+  - Create a grid of lambda, $\lambda \in exp(1:10)$
+  - For each $\lambda$, calculate the loss
+- Why not use cross validation?
+  - Assume data  $X \in \mathcal{R}^n$, the predictors is of the form $\beta \in \mathcal{R}$. In       our case, $\beta \in \mathcal{R}^n$, i.e. sequential
+  - If we have a leave out set $k_i = (x_i, y_i)$, and train the model with $k_{-i} = (x_{-i}, y_{-i})$,     and get $\beta_{-i}$. How to calculate $\hat{y_i}$ given $x_i$ and $\beta_{-i}$
+  
+
+## k-fold Cross validation from Genlasso
+
+- k = 3
+- Split data into c(x, 1, 2, 3, 1, 2, 3,..., 2, 3, x), omit the 1st and last items
+- Hold out 1, and train on group 2, 3 and get predictor (in our case, $r$) value. Then interpolate predictor value at position 1. Predict the response (y) with the interpolated predictor and the hold out explanatory (w)
+- Repeat and hold out 2 and 3
+
+
+
+## Result: Scores
+
+```{r, fig.align='center', fig.show='hold', out.height="35%",  cache.lazy=TRUE, autodep=TRUE}
+genl <- cv_genlasso(d2$iwt, d2$y, k = 5, lambdas = exp(1:40))
+genl_r <- get_r(d2$iwt, d2$y, lambda = genl$lambdas[which.min(genl$scores)])
+
+plot(genl$scores)
+
+ggplot(data.frame(idx=d2$idx, true = d2$r, pred = genl_r, ridge = ridge), aes(x=idx))+
+  geom_line(aes(x=idx, y = true), color = "blue")+
+  geom_line(aes(x=idx, y = pred), color = "red")+
+  # geom_line(aes(x=idx, y = ridge), color = "green")+
+  theme_bw()+
+  xlab("time")+
+  ylab("R")
+```
+
+
+Optimal lambda is:
+
+```{r}
+genl$lambdas[which.min(genl$scores)]
+```
+
+
+
+<!-- ## Comparing CV scores -->
+
+<!-- - I got lucky in choosing $\lambda \in exp(1:10)$ in the first cross validation task. If $lambda \in exp(1:40)$, then I would have choosen the largest lambda -->
+
+<!-- ```{r, out.height="40%"} -->
+<!-- cv_old_wider <- cv_loss(d2$iwt, d2$y, lambdas = exp(1:40)) -->
+<!-- plot(cv_old_wider$losses) -->
+<!-- cv_old_wider$best_lambda -->
+<!-- ``` -->
+
+
+
+
+## Penalizing smoothness using L1-norm
+
+- Setup:
+  - Let $y_t$ be the daily case count at day $t$
+  - Then $y_t \sim Pois(r_t*w_t)$, where $w_t = \sum_a y_{t-a}w_a$
+
+- Objective function:
+  - $argmin_r \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \lambda||Dr||_1$
+  
+- Scaled Augmented Lagrangian:
+  - Let $Dr = z$, adding penalty for being not equal
+  - $L(r, u, z) = \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \lambda||z||_1 + \frac{\rho}{2}||Dr-z+u||^2_2 + \frac{\rho}{2}||u||_2^2$
+
+  
+## Continued
+
+- $L(r, u, z) = \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \lambda||z||_1 + \frac{\rho}{2}||Dr-z+u||^2_2 + \frac{\rho}{2}||u||_2^2$
+
+- We could start optimization here:
+  - $r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \frac{\rho}{2}||Dr-z+u||^2_2$
+  - $z \leftarrow argmin_z \lambda||z||_1 + \rho||Dr-z+u||^2_2$
+  - $u \leftarrow u + Dr - z$
+
+## Further simplification
+
+- Notice that solving  $r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \frac{\rho}{2}||Dr-z+u||^2_2$ requires matrix inversion
+  - Linearize the quadratic term (by Neal Parikh, Proximal Algorithms)
+- No enforcement on $r$ being positive
+  - Instead, penalize $log(r)$ 
+  - ^ only penalize the log differences, still not enforcing $r$ to be positive
+  - (this is weird, should treat $r$ as normally would, but $\sum_{i=1} w_ir_i - y_ilog(w_ir_i))$ is $\sum_{i=1} -w_iexp(r_i) + y_ilog(w_iexp(r_i)))$ instead)
+
+## Linearize $r$ update
+
+- Linearize quadratic term $f$ as $(r-r^o)^Tf'(r^o) + \frac{\mu}{2}||r-r^o||^2_2$
+
+- In our case, $f = \frac{\rho}{2}||Dr-z+u||^2_2$
+
+- Quadratic term becomes $\rho r^T(D^TDr^o - D^Tz + D^Tu) + \frac{\mu}{2}||r-r^o||^2_2$
+
+- Then the optimization step for $r$ becomes:
+
+- $r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} -w_ir^o_i + y_ilog(w_ir^o_i)) + \rho r^T(D^TDr^o - D^Tz + D^Tu) + \frac{\mu}{2}||r-r^o||^2_2$
+
+## Linearize $log(r)$
+
+- Quadratic term becomes $f = \frac{\rho}{2}||Dlog(r)-z+u||^2_2$
+
+- $= \frac{\rho}{2}[(Dlog(r)-z)+u]^2$
+
+- $= \frac{\rho}{2}[(Dlog(r)-z)^2+2(Dlog(r)-z)u + u^2]$
+
+- $= \frac{\rho}{2}[l^TD^TDl - 2l^TD^Tz+z^2+2(Dl-z)u + u^2]$, taking $l = log(r)$
+
+- $\frac{df(r^o)}{dr} = \frac{df(r^o)}{dl}*\frac{dl}{dr} = \rho (D^TDlog(r^o)-D^Tz+D^Tu)(r^{o})^{-1}$
+
+- Then the optimization step for $r$ becomes:
+
+- $r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \rho r^T(D^TDr - D^Tz + D^Tu)(r^{o})^{-1} + \frac{\mu}{2}||r-r^o||^2_2$
+
+
+## Summary of progress
+
+Now we have choose
+
+- $r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} w_ir^o_i - y_ilog(w_ir^o_i)) + \rho r^T(D^TDr^o - D^Tz + D^Tu) + \frac{\mu}{2}||r-r^o||^2_2$
+
+- $r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \rho r^T(D^TDr - D^Tz + D^Tu)(r^{o})^{-1} + \frac{\mu}{2}||r-r^o||^2_2$
+
+
+## Continue
+
+- KKT stationarity condition: $\nabla_r L(r,u,z)|_{r=r^o} = 0$
+
+$\frac{dL(r,u,z)}{dr} = w_i - y_i\frac{w_i}{w_ir^o_i} + \rho r^t(D^TDlog(r^{o})-D^Tz+D^Tu)(r^o)^{-1} + \mu(r-r^o) = 0$
+
+=> $\mu r = -w_i + y_i\frac{w_i}{w_ir^o_i} - \rho r^t(D^TDlog(r^{o})-D^Tz+D^Tu)(r^o)^{-1}) + \mu r^o$
+
+- This is the update step of $r$
+
+## Next step
+
+- $\sum_{i=1} w_ir_i - y_ilog(w_ir_i))$ is $\sum_{i=1} -w_iexp(r_i) + y_ilog(w_iexp(r_i)))$, and penalize $Dr$ only (or $Dexp(r)$?)
+- If the above update for $r$ is correct, implement it
+
+
+## Other types of Cross validation 
+
+A Cross Validation framework for Signal Denoising with
+Applications to Trend Filtering, Dyadic CART and Beyond
+
+By Anamitra Chaudhuri and Sabyasachi Chatterjee
+
+
+## Bayesian linear regression for trend filtering
+
