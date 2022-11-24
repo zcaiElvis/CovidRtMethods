@@ -49,7 +49,7 @@ With cyclic effect
 
 ```{r, fig.show="hold", out.width="50%"}
 r1 <- c(rep(1.5, 100), rep(0.8, 100), rep(1.3, 100), rep(0.9, 100), rep(1, 100))
-r1_y <- gen_with_rt(r1, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 5)
+r1_y <- gen_with_rt(r1, init_i = 2, g_shape= sid_covid_shape, g_scale = sid_covid_scale, cyc_amp = 0)
 r1_iwt <- get_iwt(r1_y, disc_gamma(1:length(r1_y), shape=sid_covid_shape, scale=sid_covid_scale))
 
 d1 = data.frame(idx = 1:length(r1), r = r1, y = r1_y, iwt = r1_iwt)

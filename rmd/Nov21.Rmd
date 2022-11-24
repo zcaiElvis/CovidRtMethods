@@ -1,0 +1,349 @@
+---
+title: "Nov 21 Update Report"
+output: beamer_presentation
+header-includes:
+  - \usepackage{xcolor}
+date: "2022-11-19"
+fontsize: 9pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  cache = TRUE,
+  autodep = TRUE,
+  fig.width = 5,
+  fig.height = 3.5,
+  fig.retina=3)
+
+library("tidyverse")
+library("dplyr")
+library("zoo")
+
+source("../model/tf/trend_filter.R")
+source("../model/tf/trend_filter_outlier.R")
+source("../function/disc_gamma.R")
+source("../function/get_iwt.R")
+source("../constant/constant.R")
+source("../function/make_plot.R")
+
+```
+
+## Outline
+
+- Recap
+
+- Show results
+
+- Discussion
+
+- Adding in outlier term
+
+
+## Recap 1
+
+- Setup:
+  - Let $y_t$ be the daily case count at day $t$
+  - Then $y_t \sim Pois(r_t*w_t)$, where $w_t = \sum_a y_{t-a}w_a$
+
+- Objective function:
+  - $argmin_r \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \lambda||Dr||_1$
+  
+- Scaled Augmented Lagrangian:
+  - Let $Dr = z$, adding penalty for being not equal
+  - $L(r, u, z) = \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \lambda||z||_1 + \frac{\rho}{2}||Dr-z+u||^2_2 + \frac{\rho}{2}||u||_2^2$
+  
+- Update step for $r$
+  - $r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} w_ir_i - y_ilog(w_ir_i)) + \frac{\rho}{2}||Dr-z+u||^2_2$
+  
+
+## Recap 2
+
+- Linearize the update step of $r$
+
+- If penalizing $Dr$:
+$r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} -w_ir_i + y_ilog(w_ir_i)) + \rho r^T(D^TDr^o - D^Tz + D^Tu) + \frac{\mu}{2}||r-r^o||^2_2$
+
+- If penalizing $Dlog(r)$:
+$r \leftarrow argmin_r \frac{1}{n}(\sum_{i=1} -w_ir_i + y_ilog(w_ir_i)) + \rho r^T(D^TDr^o - D^Tz + D^Tu)\textcolor{red}{(r^o)^{-1}} + \frac{\mu}{2}||r-r^o||^2_2$
+
+## Pseudocode for summary
+
+Initialize $r^o,u^o,z^o$
+Until converge
+
+- Find $r$ that solves $\frac{d}{dr} \frac{1}{n}(\sum_{i=1} -w_ir_i + y_ilog(w_ir_i)) + \rho r^T(D^TDr^o- D^Tz + D^Tu) + \frac{\mu}{2}||r-r^o||^2_2$
+
+- $z = sign(z^o)*(|z^o|-(D*r-u))$
+
+- $u = u^o+Dr-z$
+
+
+## Finalizing $r$ update
+
+- KKT stationarity condition:
+
+$\frac{d}{dr} \frac{1}{n}(\sum_{i=1} -w_ir_i + y_ilog(w_ir_i)) + \rho r^T(D^TDr^o - D^Tz + D^Tu) + \frac{\mu}{2}||r-r^o||^2_2$
+
+$\implies -\frac{y_i}{n} \frac{1}{r_i} + \mu r_i + \rho(D^TDr^o-D^Tz + D^Tu)_i-\mu r_i^o + \frac{w_i}{n} = 0$
+
+- Multiply both side by $r_i$, because $r_i$ non-zero, and solve using quadratic equation
+
+- Similarly, if penalize $log(r)$, then 
+
+$\implies -\frac{y_i}{n} \frac{1}{r_i} + \mu r_i + \rho(D^TDr^o-D^Tz + D^Tu)_i\textcolor{red}{(r^o_i)^{-1}}-\mu r_i^o + \frac{w_i}{n} = 0$
+
+- Question: Quadratic equation has two solutions
+
+- "If this is satisfied uniquely (i.e., above problem has a unique minimizer), then the corresponding point must be the primal solution" - Geoff Gordon & Ryan Tibshirani's lecture slide
+
+
+## Synthetic dataset
+
+Reference synthetic dataset
+```{r, out.width="50%"}
+### Loading synthetic data d2
+d2 = read.csv("../data/processed/d2.csv")
+
+plot(d2$r, type = "l")
+plot(d2$y, type = "l")
+
+cv_reg_result <- cv_genlasso(d2$iwt, d2$y, k = 3)
+rho_reg = cv_reg_result$rhos[which.min(cv_reg_result$scores)]
+```
+
+## Trend Filter CV
+
+- Optimal $\rho$ chosen by cv (same as last time). 
+
+```{r}
+rho_reg
+```
+
+- Notice the scores are very similar
+
+```{r, out.width="80%"}
+plot(exp(seq(-10,-1, 0.5)), cv_reg_result$scores)
+```
+
+
+## Trend Filter Fit
+
+```{r, out.width="80%"}
+r = trend_filter(d2$iwt, d2$y, rho = rho_reg, num_iter = 1000)
+
+ggplot(data.frame(idx = d2$idx, true = d2$r, pred = r))+
+  geom_line(aes(x=idx, y = true), color = "red")+
+  geom_line(aes(x=idx, y = pred), color = "blue")+
+  xlab("time")+
+  ylab("Rt")+
+  theme_bw()
+```
+
+## Trend Filter Fit, pick $\rho$ myself
+
+- Since scores are similar, pick a $\rho$ that looks better
+
+```{r, out.width="80%"}
+r = trend_filter(d2$iwt, d2$y, rho = 0.03, num_iter = 1000)
+
+ggplot(data.frame(idx = d2$idx, true = d2$r, pred = r))+
+  geom_line(aes(x=idx, y = true), color = "red")+
+  geom_line(aes(x=idx, y = pred), color = "blue")+
+  xlab("time")+
+  ylab("Rt")+
+  theme_bw()
+```
+
+
+## Canadian case
+
+
+```{r, out.width = "80%"}
+ca <- read.csv("../data/processed/ca.csv")
+ca$y <- na.locf(ca$y)
+ca$iwt <- get_iwt(I = ca$y, w = disc_gamma(1:length(ca$y), sid_covid_shape, sid_covid_scale))
+
+plot(ca$y)
+```
+
+## CA Trend Filter fit
+
+- $\rho = 0.1$
+```{r, out.width = "80%"}
+tf_r = trend_filter(ca$iwt, ca$y, rho = 0.3, num_iter = 1000)
+
+ggplot(data.frame(idx=1:nrow(ca), pred_r = tf_r))+
+  geom_line(aes(x=idx, y = pred_r), color = "blue")+
+  geom_hline(yintercept=1, linetype="dashed")+
+  theme_bw()+
+  xlab("time")+
+  ylab("R")
+
+```
+
+
+## One day ahead prediction
+
+```{r, out.width = "80%"}
+onedayhead(tf_r, ca$iwt, ca$y)
+```
+
+
+## Diagnostics plot
+
+- Is residual plots appropriate for non-parametric regression?
+
+```{r, out.width = "80%"}
+
+residuals = tf_r*ca$iwt - ca$y
+
+ggplot(data=data.frame(idx = 1:nrow(ca), residuals = residuals), aes(x=idx, y =residuals))+
+  geom_point()+
+  theme_bw()+
+  xlab("time")+
+  ylab("Difference of Cases")
+
+```
+
+
+## Check for additions
+
+- Model outlier (Done)
+
+
+- Maximizing log likelihood of Poisson or Normal of true case count given predicted. 
+  - Is it reasonable to use a negative binomial distribution?
+
+
+- Difference matrix $D$ here is assumed to be of lag 1 and order 1
+  - Higher order $D$ makes sense? Or should we make it so that the degree can be chosen via CV.
+  
+
+
+## Justifying outlier term
+
+Is modeling an outlier term necessary?
+
+- Pascal et al. "Nonsmooth convex optimization ... against low quality data"
+
+- $y_t \sim Pois(r_t*w_t + \color{red}{o_t})$
+
+- Then add L1 penalty $\sum |o_t|_1$
+
+
+- Modeling outliers gives better residuals. Differences between predicted and true case count complemented by the outlier term.
+
+
+
+## Adding outlier term
+
+- $y_t \sim Pois(r_t*w_t + \color{red}{o_t})$
+
+- For simplicity, use L2 penalty on $o_t$.
+
+ $L(r, o, u, z) = \frac{1}{n}(\sum_{i=1} w_ir_i+o_i - y_ilog(w_ir_i+o_i)) + \gamma ||o||_2^2 + \lambda||z||_1 + \frac{\rho}{2}||Dr-z+u||^2_2 + \frac{\rho}{2}||u||_2^2$
+
+- $r$ update step is changed slightly
+
+- $o$ step: Find $o$ that solves $\frac{1}{n}(\sum_{i=1} w_ir_i+o_i - y_ilog(w_ir_i+o_i)) + \gamma ||o||_2^2$
+
+## Synthetic dataset
+
+- Here, $\rho = 5e-2$, and $\gamma = 1e-4$ are chosen randomly, CV for this with outlier term is under construction.
+
+```{r, out.width = "80%"}
+tf_ol_syn = trend_filter_ol(d2$iwt, d2$y, rho = 5e-2, gamm = 1e-4, num_iter = 1000)
+ggplot(data.frame(idx = d2$idx, true = d2$r, pred = tf_ol_syn$r))+
+  geom_line(aes(x=idx, y = true), color = "red")+
+  geom_line(aes(x=idx, y = pred), color = "blue")+
+  theme_bw()+
+  xlab("time")+
+  ylab("R")
+```
+
+## Outliers
+
+- Modeling outliers not very significant
+
+```{r, out.width = "80%"}
+plot(tf_ol_syn$o)
+```
+
+## Synthetic dataset, sudden changes
+
+```{r, out.width="50%"}
+d1 = read.csv("../data/processed/2022-11-20 21:43:18/d1.csv")
+plot(d1$r)
+plot(d1$y)
+
+```
+
+## Fit and outlier
+
+- Red is truth, blue is predicted
+
+```{r, out.width = "50%"}
+tf_ol_d1_syn = trend_filter_ol(d1$iwt, d1$y, rho = 5e-2, gamm = 1e-6, num_iter = 1000)
+ggplot(data.frame(idx = d1$idx, true = d1$r, pred = tf_ol_d1_syn$r))+
+  geom_point(aes(x=idx, y = true), color = "red")+
+  geom_line(aes(x=idx, y = pred), color = "blue")+
+  theme_bw()+
+  xlab("time")+
+  ylab("R")
+
+plot(tf_ol_d1_syn$o)
+```
+
+
+
+
+
+## Result
+
+```{r, out.width = "80%"}
+
+tf_ol = trend_filter_ol(ca$iwt, ca$y, rho = 1, gamm = 1, num_iter = 1000)
+
+ggplot(data.frame(idx=1:nrow(ca), pred_r = tf_ol$r))+
+  geom_line(aes(x=idx, y = pred_r), color = "blue")+
+  geom_hline(yintercept=1, linetype="dashed")+
+  theme_bw()+
+  xlab("time")+
+  ylab("R")
+```
+
+
+## One day
+
+```{r, out.width = "80%"}
+onedayhead(tf_ol$r, ca$iwt, ca$y)
+```
+
+
+
+
+## Compare
+
+- Then compare two methods. Blue, with outlier term modeled
+
+```{r, out.width="80%"}
+
+ggplot(data.frame(idx=1:nrow(ca), tf = tf_r, tf_ol = tf_ol$r), aes(x=idx))+
+  geom_line(aes(x=idx, y = tf_r), color = "red")+
+  geom_line(aes(x=idx, y = tf_ol), color = "blue")+
+  theme_bw()+
+  xlab("time")+
+  ylab("R")
+```
+
+
+
+## Next step
+
+- OOP of trend filter class
+
+
+
+
+

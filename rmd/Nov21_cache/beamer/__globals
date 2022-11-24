@@ -1,0 +1,17 @@
+unnamed-chunk-1	$	cv_genlasso	plot	read.csv	which.min
+unnamed-chunk-2	rho_reg
+unnamed-chunk-3	$	cv_reg_result	exp	plot	seq
+unnamed-chunk-4	$	aes	d2	data.frame	geom_line	ggplot	idx	pred	rho_reg	theme_bw	trend_filter	true	xlab	ylab
+unnamed-chunk-5	$	aes	d2	data.frame	geom_line	ggplot	idx	pred	theme_bw	trend_filter	true	xlab	ylab
+unnamed-chunk-6	$	$<-	disc_gamma	get_iwt	length	na.locf	plot	read.csv	sid_covid_scale	sid_covid_shape
+unnamed-chunk-7	$	aes	ca	data.frame	geom_hline	geom_line	ggplot	idx	nrow	pred_r	theme_bw	trend_filter	xlab	ylab
+unnamed-chunk-8	$	ca	onedayhead	tf_r
+unnamed-chunk-9	$	aes	ca	data.frame	geom_point	ggplot	idx	nrow	tf_r	theme_bw	xlab	ylab
+unnamed-chunk-10	$	aes	d2	data.frame	geom_line	ggplot	idx	pred	theme_bw	trend_filter_ol	true	xlab	ylab
+unnamed-chunk-11	$	plot	tf_ol_syn
+unnamed-chunk-12	$	plot	read.csv
+unnamed-chunk-13	$	aes	d1	data.frame	geom_line	geom_point	ggplot	idx	plot	pred	theme_bw	trend_filter_ol	true	xlab	ylab
+unnamed-chunk-14	$	aes	ca	data.frame	geom_hline	geom_line	ggplot	idx	nrow	pred_r	theme_bw	trend_filter_ol	xlab	ylab
+unnamed-chunk-15	$	ca	onedayhead	tf_ol
+unnamed-chunk-16	$	aes	ca	data.frame	geom_line	ggplot	idx	nrow	tf_ol	tf_r	theme_bw	xlab	ylab
+unnamed-chunk-17	$	aes	ca	data.frame	geom_line	ggplot	idx	nrow	tf_ol	tf_r	theme_bw	xlab	ylab

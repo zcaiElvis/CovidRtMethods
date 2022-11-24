@@ -21,6 +21,7 @@ tran <- discrete_time(
 
 meas_pois_interval <- function(t, x, s, T, Y, y, g_shape, g_scale, ..., log){
   if(t > 1){
+    ### THis is wrong !!! x[t], not x[1]
     lambda = x[1] * sum(Y[(t-1):1] * disc_gamma(1:(t-1), shape = g_shape, scale = g_scale))
     y*log(lambda)-lambda
   }else{
